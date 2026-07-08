@@ -1,15 +1,18 @@
 """
-Daily refresh entry point.
+Refresh entry point — runs every 4 hours via GitHub Actions.
 
-  python3 pipeline/refresh.py            # run live fetchers, rebuild everything
+  python3 pipeline/refresh.py            # run ALL fetchers, rebuild everything
   python3 pipeline/refresh.py --sample   # skip fetchers (offline rebuild)
 
-Each fetcher writes data/live/{id}.json; generate_data.build() overlays live
-observations onto the catalog (tiles flip SAMPLE -> LIVE automatically at
->= 14 observations). A failing fetcher never blocks the build — the series
-keeps its last stored live data, or stays sample.
+Every module in pipeline/fetchers/ that exposes fetch() is discovered and run,
+newest data merging into data/live/*.json. A failing or stubbed fetcher never
+blocks the build — its series keeps the last stored data (staleness stays
+visible in the tile's period label and the freshness table).
 """
+import importlib
+import pkgutil
 import sys
+import time
 import traceback
 from pathlib import Path
 
@@ -18,16 +21,25 @@ import generate_data
 
 
 def run_fetchers():
-    import fetchers.esankhyiki as esankhyiki      # CPI / CFPI / WPI / IIP (live)
-    import fetchers.nsdl_fii as nsdl_fii          # FII daily (live, accumulating)
-    import fetchers.fred as fred                  # global block (works outside sandbox)
-    import fetchers.nse_dii as nse_dii            # DII daily (stub - anti-bot)
+    import fetchers
     import news
-    for mod in (esankhyiki, nsdl_fii, fred, nse_dii, news):
+    mods = []
+    for m in pkgutil.iter_modules(fetchers.__path__):
         try:
-            mod.fetch()
+            mods.append(importlib.import_module(f"fetchers.{m.name}"))
+        except Exception as e:
+            print(f"  [import-fail] {m.name}: {e!r}")
+    mods.append(news)
+    for mod in mods:
+        fn = getattr(mod, "fetch", None)
+        if not callable(fn):
+            continue
+        t0 = time.time()
+        try:
+            fn()
+            print(f"  [ok]   {mod.__name__} ({time.time() - t0:.0f}s)")
         except NotImplementedError:
-            print(f"  [skip] {mod.__name__}: not wired yet")
+            print(f"  [stub] {mod.__name__}")
         except Exception as e:
             print(f"  [fail] {mod.__name__}: {e!r} — keeping last good data")
             traceback.print_exc()
@@ -37,7 +49,7 @@ def main():
     if "--sample" not in sys.argv:
         run_fetchers()
     generate_data.build()
-    import build_dashboard  # noqa: F401  (writes dashboard.html)
+    import build_dashboard  # noqa: F401  (writes dashboard.html + index.html)
     import make_edition     # noqa: F401  (writes edition.html)
     import alerts
     alerts.deliver(alerts.evaluate())
