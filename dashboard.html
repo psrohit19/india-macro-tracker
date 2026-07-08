@@ -157,6 +157,7 @@
   }
   .rbtn:hover { color: var(--text-primary); }
   .rbtn.active { background: var(--chip-bg); color: var(--text-primary); border-color: var(--baseline); }
+  .rbtn.dis { opacity: 0.35; cursor: not-allowed; }
   .tile .lbl { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
   .tile .lbl .name { font-size: 12.5px; color: var(--text-secondary); line-height: 1.25; margin-right: auto; }
   .info-btn {
@@ -457,16 +458,27 @@
 
   // period-toggle ranges: label -> number of native periods (filtered per series)
   const PPY = { D: 250, W: 52, F: 26, M: 12, B: 6, Q: 4, H: 2 };
+  // Full toggle set on every chart. A step is DISABLED (not hidden) when the
+  // series' native frequency can't fill it with >=2 observations, or when the
+  // stored history is still shorter than the window (backfills deepen it).
+  const YEARS = { "1D": 1/250, "5D": 5/250, "1M": 1/12, "3M": 0.25, "6M": 0.5,
+                  "1Y": 1, "2Y": 2, "3Y": 3, "5Y": 5, "10Y": 10 };
   function rangesFor(s) {
     const ppy = PPY[s.freq], len = s.history.values.length;
-    const cand = [];
-    if (s.freq === "D") cand.push(["1D", 2], ["5D", 6], ["1M", 23]);
-    if (s.freq === "W") cand.push(["1M", 5]);
-    cand.push(["3M", Math.max(2, Math.round(ppy / 4))],
-              ["6M", Math.max(2, Math.round(ppy / 2))],
-              ["1Y", ppy], ["2Y", 2 * ppy], ["3Y", 3 * ppy],
-              ["5Y", 5 * ppy], ["10Y", 10 * ppy]);
-    return cand.filter(([, n], i) => n >= 2 && (n <= len || (i > 0 && cand[i - 1][1] < len)));
+    const out = [];
+    let prevOk = 0;
+    for (const key of Object.keys(YEARS)) {
+      const n = Math.max(2, Math.round(YEARS[key] * ppy));
+      const freqOk = YEARS[key] * ppy >= 1.5;         // window holds >=2 native periods
+      const histOk = n <= len || (prevOk > 0 && prevOk < len);
+      const enabled = freqOk && histOk;
+      let why = "";
+      if (!freqOk) why = "Not available at " + FREQ[s.freq].toLowerCase() + " frequency — window would hold under two data points.";
+      else if (!histOk) why = "History not deep enough yet — backfills and each refresh extend it.";
+      out.push([key, n, enabled, why]);
+      if (enabled) prevOk = n;
+    }
+    return out;
   }
   function makeRangeChart(s, defKey) {
     const box = el("div");
@@ -475,7 +487,8 @@
     box.appendChild(btns);
     box.appendChild(holder);
     const rs = rangesFor(s);
-    let active = rs.find(r => r[0] === defKey) || rs[Math.min(4, rs.length - 1)];
+    const en = rs.filter(r => r[2]);
+    let active = en.find(r => r[0] === defKey) || en[en.length - 1] || rs[rs.length - 1];
     function render() {
       holder.textContent = "";
       const n = Math.min(active[1], s.history.values.length);
@@ -484,8 +497,9 @@
         b.classList.toggle("active", b.textContent === active[0]));
     }
     rs.forEach(r => {
-      const b = el("button", "rbtn", r[0]);
-      b.addEventListener("click", ev => { ev.stopPropagation(); active = r; render(); });
+      const b = el("button", "rbtn" + (r[2] ? "" : " dis"), r[0]);
+      if (r[2]) b.addEventListener("click", ev => { ev.stopPropagation(); active = r; render(); });
+      else { b.title = r[3]; b.disabled = true; }
       btns.appendChild(b);
     });
     render();
@@ -562,7 +576,8 @@
     const holder = el("div");
     box.appendChild(btns); box.appendChild(holder);
     const rs = rangesFor(s);
-    let active = rs.find(r => r[0] === "1Y") || rs[rs.length - 1];
+    const en = rs.filter(r => r[2]);
+    let active = en.find(r => r[0] === "1Y") || en[en.length - 1] || rs[rs.length - 1];
     function render() {
       holder.textContent = "";
       holder.appendChild(miniChart(s, Math.min(active[1], s.history.values.length)));
@@ -570,8 +585,9 @@
         b.classList.toggle("active", b.textContent === active[0]));
     }
     rs.forEach(r => {
-      const b = el("button", "rbtn", r[0]);
-      b.addEventListener("click", ev => { ev.stopPropagation(); active = r; render(); });
+      const b = el("button", "rbtn" + (r[2] ? "" : " dis"), r[0]);
+      if (r[2]) b.addEventListener("click", ev => { ev.stopPropagation(); active = r; render(); });
+      else { b.title = r[3]; b.disabled = true; }
       btns.appendChild(b);
     });
     render();
