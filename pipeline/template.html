@@ -544,20 +544,36 @@
   // stored history is still shorter than the window (backfills deepen it).
   const YEARS = { "1D": 1/250, "5D": 5/250, "1M": 1/12, "3M": 0.25, "6M": 0.5,
                   "1Y": 1, "2Y": 2, "3Y": 3, "5Y": 5, "10Y": 10 };
+  // date-based slicing: a window is available if the HISTORY SPAN covers it,
+  // regardless of how sparse the observations are (weekly reserves over 10
+  // years = 10Y available with ~520 or ~120 points alike).
+  function idxFor(s, years) {
+    const dates = s.history.dates;
+    const last = new Date(dates[dates.length - 1] + "T00:00:00Z");
+    const cutoff = new Date(last);
+    cutoff.setUTCDate(cutoff.getUTCDate() - Math.round(years * 365.25));
+    const iso = cutoff.toISOString().slice(0, 10);
+    let lo = 0, hi = dates.length - 1;
+    while (lo < hi) { const mid = (lo + hi) >> 1; if (dates[mid] < iso) lo = mid + 1; else hi = mid; }
+    return lo;
+  }
   function rangesFor(s) {
     const ppy = PPY[s.freq], len = s.history.values.length;
+    const dates = s.history.dates;
+    const spanY = (new Date(dates[len - 1]) - new Date(dates[0])) / 3.156e10;
     const out = [];
-    let prevOk = 0;
+    let prevCnt = 0;
     for (const key of Object.keys(YEARS)) {
-      const n = Math.max(2, Math.round(YEARS[key] * ppy));
-      const freqOk = YEARS[key] * ppy >= 1.5;         // window holds >=2 native periods
-      const histOk = n <= len || (prevOk > 0 && prevOk < len);
-      const enabled = freqOk && histOk;
+      const yrs = YEARS[key];
+      const cnt = len - idxFor(s, yrs);
+      const freqOk = yrs * ppy >= 1.5;                // window holds >=2 native periods
+      const spanOk = cnt >= 2 && (yrs <= spanY * 1.25 || prevCnt < len);
+      const enabled = freqOk && spanOk;
       let why = "";
       if (!freqOk) why = "Not available at " + FREQ[s.freq].toLowerCase() + " frequency — window would hold under two data points.";
-      else if (!histOk) why = "History not deep enough yet — backfills and each refresh extend it.";
-      out.push([key, n, enabled, why]);
-      if (enabled) prevOk = n;
+      else if (!spanOk) why = "History not deep enough yet — backfills and each refresh extend it.";
+      out.push([key, yrs, enabled, why]);
+      if (enabled) prevCnt = cnt;
     }
     return out;
   }
@@ -572,7 +588,7 @@
     let active = en.find(r => r[0] === defKey) || en[en.length - 1] || rs[rs.length - 1];
     function render() {
       holder.textContent = "";
-      const n = Math.min(active[1], s.history.values.length);
+      const n = Math.max(2, s.history.values.length - idxFor(s, active[1]));
       holder.appendChild(bigChart(s, n));
       btns.querySelectorAll(".rbtn").forEach(b =>
         b.classList.toggle("active", b.textContent === active[0]));
@@ -661,7 +677,7 @@
     let active = en.find(r => r[0] === "1Y") || en[en.length - 1] || rs[rs.length - 1];
     function render() {
       holder.textContent = "";
-      holder.appendChild(miniChart(s, Math.min(active[1], s.history.values.length)));
+      holder.appendChild(miniChart(s, Math.max(2, s.history.values.length - idxFor(s, active[1]))));
       btns.querySelectorAll(".rbtn").forEach(b =>
         b.classList.toggle("active", b.textContent === active[0]));
     }
