@@ -302,6 +302,21 @@
     "as of " + new Date(DATA.as_of + "T00:00:00").toLocaleDateString("en-IN",
       { day: "numeric", month: "long", year: "numeric" });
 
+  // adaptive banner: report live coverage instead of a blanket sample warning
+  (function () {
+    const real = DATA.series.filter(s => s.category !== "Composite Signals");
+    const live = real.filter(s => !s.sample);
+    const b = document.getElementById("banner");
+    if (live.length === real.length) { b.remove(); return; }
+    b.textContent = "";
+    const strong = document.createElement("strong");
+    strong.textContent = live.length + " of " + real.length + " series carry real data.";
+    b.appendChild(strong);
+    b.appendChild(document.createTextNode(
+      " Green “live” stamps are fetcher-automated; “verified seed” = real official values pending automation. " +
+      "Tiles still marked SAMPLE should not be quoted."));
+  })();
+
   const el = (tag, cls, text) => {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -568,7 +583,7 @@
   DATA.series.filter(s => s.headline).forEach(s => {
     const h = el("div", "hero");
     const hn = el("div", "hname");
-    hn.appendChild(el("span", null, s.name));
+    hn.appendChild(el("span", null, s.name + (s.sample ? " — SAMPLE" : "")));
     hn.appendChild(el("span", null, s.latest.period));
     h.appendChild(hn);
     const hv = el("div", "hval", s.latest.value);
@@ -689,8 +704,10 @@
         a2.addEventListener("click", ev => ev.stopPropagation());
         src.appendChild(a2);
       } else src.appendChild(el("span", null, s.source));
-      const acc = el("span", "access", s.sample ? "sample" : "live · " + s.access);
+      const acc = el("span", "access",
+        s.sample ? "sample" : (s.seeded ? "live · verified seed" : "live · " + s.access));
       if (!s.sample) acc.style.color = "var(--good)";
+      if (s.seeded) acc.title = "Real values hand-verified from the official source; automated fetcher pending.";
       src.appendChild(acc);
       t.appendChild(src);
 
@@ -711,7 +728,7 @@
     tr.appendChild(el("td", null, s.latest.period));
     const st = el("td");
     st.appendChild(el("span", "st " + (s.sample ? "sample" : "live"),
-      s.sample ? "sample" : "live"));
+      s.sample ? "sample" : (s.seeded ? "seeded" : "live")));
     tr.appendChild(st);
     const tdSrc = el("td");
     if (s.url) {

@@ -35,7 +35,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent))
 from catalog import SERIES, CATEGORIES, COMPOSITES
 
-TODAY = date(2026, 7, 8)          # in production: date.today()
+TODAY = date.today()
 LT_WINDOW = {"D": 2500, "W": 520, "F": 260, "M": 120, "B": 60, "Q": 40, "H": 20}
 PPY = {"D": 250, "W": 52, "F": 26, "M": 12, "B": 6, "Q": 4, "H": 2}  # periods/yr
 OUT = Path(__file__).parent.parent / "data" / "data.json"
@@ -43,12 +43,17 @@ LIVE = Path(__file__).parent.parent / "data" / "live"
 
 
 def live_obs(sid):
-    """Return [(iso, value), ...] if a fetcher has written live data for sid."""
+    """Return (obs, seeded) if live data exists for sid; else None.
+    obs = [(iso, value), ...]; seeded=True means hand-verified transcription
+    from the official source rather than an automated fetcher."""
     f = LIVE / f"{sid}.json"
     if not f.exists():
         return None
-    obs = json.loads(f.read_text())["obs"]
-    return sorted(obs) if len(obs) >= 14 else None   # need enough for YoY+spark
+    payload = json.loads(f.read_text())
+    obs = sorted(payload["obs"])
+    if len(obs) < 14:                     # need enough for YoY + 12-period avg
+        return None
+    return obs, bool(payload.get("seed"))
 
 
 def iso_label(freq, iso):
@@ -209,9 +214,9 @@ def build_record(s, vals, labels):
 
     off = yoy_offset(freq)
     if len(vals) > off:
-        yoy_v, yoy_l = vals[-1 - off], labels[-1 - off][0]
-    else:
-        yoy_v, yoy_l = vals[0], "yr ago"
+        yoy_v, yoy_l, yoy_key = vals[-1 - off], labels[-1 - off][0], "vs LY"
+    else:  # history shorter than a year — compare vs oldest, labeled honestly
+        yoy_v, yoy_l, yoy_key = vals[0], labels[0][0], "vs start"
 
     w12 = vals[-13:-1]
     avg12 = sum(w12) / len(w12)
@@ -233,10 +238,11 @@ def build_record(s, vals, labels):
         lt_row = ["growth vs 3-yr trend", f"{cagr:+.1f}%/yr",
                   dict(text=f"{gap:+.1f} pp", dir=(0 if abs(gap) < 0.05 else (1 if gap > 0 else -1)))]
     else:
-        lt_row = ["vs 10-yr avg", fmt_val(avg_lt, unit), delta(latest_v, avg_lt, kind, unit)]
+        lt_key = "vs 10-yr avg" if ltn >= LT_WINDOW.get(freq, 120) else "vs full-history avg"
+        lt_row = [lt_key, fmt_val(avg_lt, unit), delta(latest_v, avg_lt, kind, unit)]
 
     prev_row = [f"vs prev ({prev_l})", fmt_val(prev_v, unit), delta(latest_v, prev_v, kind, unit)]
-    yoy_row = [f"vs LY ({yoy_l})", fmt_val(yoy_v, unit), delta(latest_v, yoy_v, kind, unit)]
+    yoy_row = [f"{yoy_key} ({yoy_l})", fmt_val(yoy_v, unit), delta(latest_v, yoy_v, kind, unit)]
     avg_row = [f"vs 12-{freq_word} avg", fmt_val(avg12, unit), delta(latest_v, avg12, kind, unit)]
 
     # seasonal series lead with YoY; MoM is demoted (rendered muted by the page)
@@ -323,6 +329,8 @@ def build_bullets(records):
     for r in records:
         if r["category"] in ("Composite Signals",) or abs(r["z12"]) < 0.1:
             continue
+        if r.get("sample"):          # never narrate dummy data
+            continue
         scored.append(r)
     scored.sort(key=lambda r: -abs(r["z12"]))
     bullets, seen_cat = [], set()
@@ -358,14 +366,18 @@ def derive_monthly_sum(vals, labels):
 def build():
     records, hist_by_id, labels_by_id, live_ids = [], {}, {}, set()
     derived = [s for s in SERIES if s.get("derive_sum_from")]
+    seeded_ids = set()
     for s in SERIES:
         if s.get("derive_sum_from"):
             continue
-        obs = live_obs(s["id"])
-        if obs:
+        hit = live_obs(s["id"])
+        if hit:
+            obs, seeded = hit
             labels = [(iso_label(s["freq"], iso), iso) for iso, _ in obs]
             vals = [v for _, v in obs]
             live_ids.add(s["id"])
+            if seeded:
+                seeded_ids.add(s["id"])
         else:
             n = n_periods(s["freq"])
             labels = period_labels(s["freq"], n)
@@ -373,6 +385,7 @@ def build():
         hist_by_id[s["id"]], labels_by_id[s["id"]] = vals, labels
         rec = build_record(s, vals, labels)
         rec["sample"] = s["id"] not in live_ids
+        rec["seeded"] = s["id"] in seeded_ids
         records.append(rec)
 
     for s in derived:
@@ -380,6 +393,7 @@ def build():
         vals, labels = derive_monthly_sum(hist_by_id[src], labels_by_id[src])
         rec = build_record(s, vals, labels)
         rec["sample"] = src not in live_ids
+        rec["seeded"] = src in seeded_ids
         # insert right after its daily source for adjacency in the grid
         idx = next(i for i, r in enumerate(records) if r["id"] == src)
         records.insert(idx + 1, rec)
