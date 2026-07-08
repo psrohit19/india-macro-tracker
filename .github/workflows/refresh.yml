@@ -1,10 +1,10 @@
-# Daily refresh of the India Macro Tracker -> GitHub Pages.
-# 19:45 IST (14:15 UTC) after market close, + 09:15 IST for overnight prints.
+# Refresh of the India Macro Tracker -> GitHub Pages, every 4 hours.
+# Anchored so one run lands at 19:45 IST, right after market close / NSDL+NSE prints.
+# Runs (IST): 03:45, 07:45, 11:45, 15:45, 19:45, 23:45.
 name: refresh-dashboard
 on:
   schedule:
-    - cron: "15 14 * * *"   # 19:45 IST daily
-    - cron: "45 3 * * *"    # 09:15 IST daily
+    - cron: "15 2,6,10,14,18,22 * * *"   # every 4 hours (UTC); 14:15 UTC = 19:45 IST
   workflow_dispatch: {}
   push:
     branches: [main]
