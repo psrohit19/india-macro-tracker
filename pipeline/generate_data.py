@@ -417,12 +417,20 @@ def build():
 
     # composite indices removed from the page per user feedback (Jul 2026);
     # build_composites() is retained above for potential re-enablement.
+    news = []
+    nf = Path(__file__).parent.parent / "data" / "news.json"
+    if nf.exists():
+        try:
+            news = json.loads(nf.read_text()).get("items", [])
+        except Exception:
+            pass
     payload = dict(
         as_of=TODAY.isoformat(),
         generated="sample-v2",
         categories=CATEGORIES,
         series=records,
-        bullets=build_bullets(records),
+        bullets=build_bullets(records),   # still used by the edition
+        news=news,
     )
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))

@@ -22,7 +22,8 @@ def run_fetchers():
     import fetchers.nsdl_fii as nsdl_fii          # FII daily (live, accumulating)
     import fetchers.fred as fred                  # global block (works outside sandbox)
     import fetchers.nse_dii as nse_dii            # DII daily (stub - anti-bot)
-    for mod in (esankhyiki, nsdl_fii, fred, nse_dii):
+    import news
+    for mod in (esankhyiki, nsdl_fii, fred, nse_dii, news):
         try:
             mod.fetch()
         except NotImplementedError:
