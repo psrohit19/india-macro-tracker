@@ -363,12 +363,27 @@ def derive_monthly_sum(vals, labels):
     return [buckets[k] for k in keys], mlabels
 
 
+def derive_fytd_sum(vals, labels):
+    """Cumulative fiscal-year-to-date sum of a daily flow, one obs per month.
+    Resets every 1 April; latest month = FYTD through the latest print."""
+    mvals, mlabels = derive_monthly_sum(vals, labels)
+    out, running, fy = [], 0.0, None
+    for v, (_, iso) in zip(mvals, mlabels):
+        y, m = int(iso[:4]), int(iso[5:7])
+        this_fy = y if m >= 4 else y - 1
+        if this_fy != fy:
+            fy, running = this_fy, 0.0
+        running += v
+        out.append(running)
+    return out, mlabels
+
+
 def build():
     records, hist_by_id, labels_by_id, live_ids = [], {}, {}, set()
-    derived = [s for s in SERIES if s.get("derive_sum_from")]
+    derived = [s for s in SERIES if s.get("derive_sum_from") or s.get("derive_fytd_from")]
     seeded_ids = set()
     for s in SERIES:
-        if s.get("derive_sum_from"):
+        if s.get("derive_sum_from") or s.get("derive_fytd_from"):
             continue
         hit = live_obs(s["id"])
         if hit:
@@ -389,13 +404,15 @@ def build():
         records.append(rec)
 
     for s in derived:
-        src = s["derive_sum_from"]
-        vals, labels = derive_monthly_sum(hist_by_id[src], labels_by_id[src])
+        src = s.get("derive_sum_from") or s.get("derive_fytd_from")
+        fn = derive_monthly_sum if s.get("derive_sum_from") else derive_fytd_sum
+        vals, labels = fn(hist_by_id[src], labels_by_id[src])
         rec = build_record(s, vals, labels)
         rec["sample"] = src not in live_ids
         rec["seeded"] = src in seeded_ids
-        # insert right after its daily source for adjacency in the grid
-        idx = next(i for i, r in enumerate(records) if r["id"] == src)
+        # insert after its source (or an explicit anchor) for grid adjacency
+        anchor = s.get("insert_after", src)
+        idx = next((i for i, r in enumerate(records) if r["id"] == anchor), len(records) - 1)
         records.insert(idx + 1, rec)
 
     composites = build_composites(hist_by_id)

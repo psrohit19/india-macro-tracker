@@ -175,6 +175,14 @@ SERIES = [
          info=dict(
              what="Calendar-month sum of NSDL daily FPI equity net flows (₹ crore) — the monthly view of foreign positioning; smoother and more decision-relevant than the daily tape. The current month accumulates as days land.",
              changes="Derived series: exactly the daily NSDL numbers bucketed by month, so it inherits the NSDL-vs-NSE-vs-SEBI definitional caveats. The in-progress month is month-to-date, not a full month — compare completed months for YoY.")),
+    dict(id="fii_fytd", name="FPI net flows (FYTD)", category="Flows & Markets",
+         unit="₹ cr", freq="M", agg="last", up_is_good=True, kind="flow",
+         base=0, vol=0, derive_fytd_from="fii", insert_after="fii_m",
+         source="NSDL (FY-to-date rollup)", access="scrape",
+         url="https://www.fpi.nsdl.co.in/Reports/Latest.aspx", release="Derived from daily",
+         info=dict(
+             what="Cumulative net FPI equity investment in listed markets since 1 April of the current fiscal year (₹ crore) — the running FY scorecard of foreign positioning, resetting each April. Sum of the same NSDL daily series the daily and monthly tiles use.",
+             changes="Derived series: value shown is FY-to-date through the latest NSDL print; the sparkline shows the FYTD path accumulating month by month. History currently starts with FY27 (daily backfill begins Apr 2026) and deepens as more daily history is captured.")),
     dict(id="dii_m", name="DII net flows (monthly)", category="Flows & Markets",
          unit="₹ cr", freq="M", agg="last", up_is_good=True, kind="flow",
          base=0, vol=0, derive_sum_from="dii", source="NSE (monthly rollup)", access="scrape",
@@ -189,6 +197,13 @@ SERIES = [
          info=dict(
              what="Monthly mutual-fund inflows via Systematic Investment Plans (₹ crore), from AMFI — the structural retail bid underpinning DII flows.",
              changes="AMFI periodically revises how it counts SIP registrations vs live accounts; the flow number itself is stable. Compare against gross equity-scheme flows to see whether lumpsum money is amplifying or offsetting the SIP trend.")),
+    dict(id="mf_cash", name="MF cash holding (% of AUM)", category="Flows & Markets",
+         unit="%", freq="M", agg="last", up_is_good=None, kind="rate",
+         base=4.9, vol=0.25, source="AMFI / brokerage compilations", access="scrape",
+         url="https://www.amfiindia.com/research-information/amfi-monthly", release="Mid-month, ~1 mo lag",
+         info=dict(
+             what="Cash and equivalents held by equity mutual funds as a percentage of their AUM — the domestic 'dry powder' gauge. Rising cash = fund managers defensive / buying power building; falling cash = fully deployed. Not published directly by AMFI; compiled monthly by brokerages (Motilal Oswal, ICICI Sec) from scheme portfolio disclosures.",
+             changes="Definitional variance across compilers (top-20 funds vs all equity schemes; whether arbitrage cash is included) — keep one compiler's series. Scheme portfolio disclosures release with ~10-15 day lag, so this runs a month behind flows data.")),
     dict(id="gsec10y", name="10Y G-sec yield", category="Flows & Markets",
          unit="%", freq="D", agg="last", up_is_good=False, kind="rate",
          base=6.32, vol=0.05, source="FBIL / CCIL", access="file",
@@ -328,13 +343,6 @@ SERIES = [
          info=dict(
              what="Households demanding work under the rural employment guarantee in the month — an inverse rural-distress gauge: demand rises when farm and informal work dries up.",
              changes="Demand data is administrative and can be suppressed by budget exhaustion or Aadhaar-linked payment issues (i.e., measured demand < true demand in stressed months). Strong seasonality — compare YoY, not MoM.")),
-    dict(id="rural_wages", name="Rural wage growth", category="Rural & Agri",
-         unit="% YoY", freq="M", agg="last", up_is_good=True, kind="rate",
-         base=5.9, vol=0.3, source="Labour Bureau (PDF)", access="pdf",
-         url="https://labourbureau.gov.in/", release="~2 mo lag",
-         info=dict(
-             what="YoY growth in nominal rural wages (agricultural and non-agricultural occupations) from the Labour Bureau's Wage Rates in Rural India. Deflate by rural CPI for the real-wage read that actually drives rural demand.",
-             changes="~2-month publication lag and occasional gap months. Real rural wage growth was negative-to-flat for much of 2022-24 — the level of the real series matters more than nominal momentum.")),
 
     # ---------------- Employment ----------------
     dict(id="plfs_ur", name="Unemployment rate (PLFS, CWS)", category="Employment",
@@ -585,7 +593,7 @@ HEADLINE = ["cpi", "iip", "gst", "credit", "fii_m", "pv", "trade_def", "gsec10y"
 # Tile presentation overrides:
 #   compact — number + comparisons only, no chart (daily flow tapes)
 #   chart   — wide tile with a period-toggle chart (1D/5D/1M/6M/1Y/2Y/3Y/5Y/10Y)
-DISPLAY = {"fii": "compact", "dii": "compact",
+DISPLAY = {"fii": "compact", "dii": "compact", "fii_fytd": "compact",
            "nifty": "chart", "repo": "chart", "gsec10y": "chart", "inrusd": "chart"}
 
 # Monthly/quarterly series where month-on-month is mostly calendar/seasonality:
@@ -620,9 +628,9 @@ for s in SERIES:
 COMPOSITES = [
     dict(id="cmp_rural", name="Rural Demand Index",
          components=[("tractors", 1), ("tw", 1), ("mgnrega", -1),
-                     ("rural_wages", 1), ("rainfall", 1)],
+                     ("rainfall", 1)],
          info=dict(
-             what="Equal-weight composite of z-scores (10-year window, monthly grid) of tractor sales, 2W retail, MGNREGA work demand (inverted), real rural wage growth and rainfall vs LPA. Positive = rural demand running above its 10-year norm.",
+             what="Equal-weight composite of z-scores (10-year window, monthly grid) of tractor sales, 2W retail, MGNREGA work demand (inverted) and rainfall vs LPA. Positive = rural demand running above its 10-year norm.",
              changes="Components with shorter histories use full available history for their z-window. MGNREGA enters inverted (rising work demand = distress). Rainfall drops out of the composite outside the monsoon season in production.")),
     dict(id="cmp_urban", name="Urban Discretionary Index",
          components=[("pv", 1), ("cards", 1), ("airpax", 1), ("upi", 1)],
