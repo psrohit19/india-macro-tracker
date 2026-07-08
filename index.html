@@ -43,6 +43,50 @@
       --banner-bg: #2a2415;
     }
   }
+
+  /* ---- Bloomberg-terminal theme (explicit toggle) ---- */
+  html[data-theme="terminal"] body {
+    font-family: "Consolas", "IBM Plex Mono", "Menlo", "Liberation Mono", monospace;
+  }
+  html[data-theme="terminal"] {
+    --surface-1: #0b0b09;
+    --page: #000000;
+    --text-primary: #f4f1e0;
+    --text-secondary: #cfc9b0;
+    --muted: #8f8868;
+    --grid: #1d1c16;
+    --baseline: #6e684d;
+    --border: #33301f;
+    --accent: #ffa000;
+    --good: #00e05a;
+    --bad: #ff4136;
+    --good-wash: rgba(0,224,90,0.12);
+    --bad-wash: rgba(255,65,54,0.12);
+    --neut-wash: rgba(143,136,104,0.12);
+    --chip-bg: #14130d;
+    --banner-bg: #171204;
+  }
+  html[data-theme="terminal"] h1,
+  html[data-theme="terminal"] .cat-head h2,
+  html[data-theme="terminal"] .changed h2,
+  html[data-theme="terminal"] .fresh h2 { color: #ffb000; }
+  html[data-theme="terminal"] h1 { letter-spacing: 0; }
+  html[data-theme="terminal"] header.top { border-bottom: 1px solid #ffa00055; padding-bottom: 10px; }
+  html[data-theme="terminal"] .tile .lbl .name,
+  html[data-theme="terminal"] .hero .hname,
+  html[data-theme="terminal"] table.cmp td.k { color: #d8a520; }
+  html[data-theme="terminal"] .tile .val,
+  html[data-theme="terminal"] .hero .hval,
+  html[data-theme="terminal"] .modal .mval { color: #ffffff; }
+  html[data-theme="terminal"] .nlink { color: #ffd280; }
+  html[data-theme="terminal"] .nlink:hover { color: #ffa000; }
+  html[data-theme="terminal"] .src a, html[data-theme="terminal"] table.ft td a { color: #ffa000; }
+  html[data-theme="terminal"] .tile, html[data-theme="terminal"] .hero,
+  html[data-theme="terminal"] .changed, html[data-theme="terminal"] .fresh-wrap,
+  html[data-theme="terminal"] .modal { box-shadow: none; border-color: #33301f; }
+  html[data-theme="terminal"] #refreshbtn { background: rgba(0,224,90,0.12); }
+  html[data-theme="terminal"] .banner { border-color: #ffa00044; }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -255,7 +299,9 @@
   <header class="top">
     <h1>Claypond India Macroeconomic Tracker</h1>
     <span class="asof" id="asof"></span>
-    <button class="dl-all" id="refreshbtn" style="margin-left:auto;" title="Reload the page bypassing cache to show the latest published data">&#8635; Refresh</button>
+    <button class="dl-all" id="themebtn" style="margin-left:auto;"
+      title="Toggle Bloomberg-terminal dark mode">&#9679; Terminal</button>
+    <button class="dl-all" id="refreshbtn" title="Reload the page bypassing cache to show the latest published data">&#8635; Refresh</button>
     <a class="dl-all" style="text-decoration:none; display:inline-block;"
        href="https://github.com/psrohit19/india-macro-tracker/actions/workflows/refresh.yml"
        target="_blank" rel="noopener"
@@ -405,6 +451,25 @@
     a.click();
     URL.revokeObjectURL(a.href);
   }
+  // ---- Bloomberg-terminal theme toggle (state carried in the URL) ----
+  const themeBtn = document.getElementById("themebtn");
+  function applyTheme(t) {
+    if (t === "terminal") {
+      document.documentElement.setAttribute("data-theme", "terminal");
+      themeBtn.textContent = "\u25CF Light mode";
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+      themeBtn.textContent = "\u25CF Terminal";
+    }
+    const u = new URL(window.location.href);
+    if (t === "terminal") u.searchParams.set("theme", "terminal");
+    else u.searchParams.delete("theme");
+    history.replaceState(null, "", u.toString());
+  }
+  themeBtn.addEventListener("click", () =>
+    applyTheme(document.documentElement.getAttribute("data-theme") === "terminal" ? "" : "terminal"));
+  if (new URL(window.location.href).searchParams.get("theme") === "terminal") applyTheme("terminal");
+
   document.getElementById("refreshbtn").addEventListener("click", () => {
     const u = new URL(window.location.href);
     u.searchParams.set("r", Date.now().toString(36));
