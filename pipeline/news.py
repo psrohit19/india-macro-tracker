@@ -50,7 +50,9 @@ WEIGHTS = {
     "hike": 3, "growth": 2, "deficit": 3, "announce": 2, "reform": 3,
     "china": 2, "exports": 2, "capex": 3, "downgrade": 4, "upgrade": 3,
 }
-JUNK = re.compile(r"(horoscope|cricket|bollywood|celebrit|astrolog)", re.I)
+JUNK = re.compile(r"(horoscope|cricket|bollywood|celebrit|astrolog|"
+                  r"\bnepal\b|\bnrb\b|rastra bank|sri lanka|\bpakistan\b|"
+                  r"bangladesh|\bbhutan\b|maldives)", re.I)
 BAD_SOURCES = re.compile(r"(crypto|coin|mexc|cryptorank|nai500|sekber|blockchain|bitcoin|forex\s*live|fxstreet|tmgm)", re.I)
 
 
