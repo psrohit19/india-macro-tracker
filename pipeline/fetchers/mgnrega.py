@@ -27,6 +27,40 @@ counted only in the first). Trend/seasonality remain informative; values are
 lower than the nrega.nic.in "households demanded work in month" press figure.
 
 Writes data/live/mgnrega.json: {"freq": "M", "obs": [["YYYY-MM-01", cr], ...]}
+
+SEED NOTES (2026-07-08) — data/live/mgnrega.json was OVERWRITTEN with a manual
+seed ("seed": true); this fetcher's output (incremental-households-worked
+proxy) does NOT match the catalog definition and produced 4 tiny values.
+Do not re-enable without rework.
+
+  * Seed definition: households that DEMANDED work in the month (nrega.nic.in
+    MIS "work demand" metric, as compiled monthly by CMIE Economic Outlook).
+  * Seed source: monthly series (Apr 2013-May 2026) embedded in the Next.js
+    flight payload of
+    https://indiamacroindicators.co.in/economic-indicators/mgnrega-work-demanded
+    ("Source: CMIE Economic Outlook, 1 Finance Research"), fetched 2026-07-08.
+    Values are that aggregator's snapshot; MIS back-revises upward, so early
+    press prints can be a shade lower (e.g. May 2025: 28.32-28.39 mn in
+    Jun/Jul-2025 press vs 28.4 mn here).
+  * Cross-verified against independent press (10+ points, values and/or %YoY):
+    BS 125050100784 (Apr'25 20.1mn -6.6%), Wire (May'25 28.39/May'24 27.18),
+    BS 125070101054 (Jun'25 27.59, Jun'24 26.39), Swarajya (Jun'24 26.42),
+    Drishti/ET (Jul'24 18.90 -19.5%), BS 125090101225 (Aug'25 -26%),
+    BS 125110100027 (Oct'25 -35.3%), BS 125120101167 (Nov'25 ~-32%, "May &
+    June only FY26 upticks"), BS 125010201127 (Dec'24 21.58), BS 125030300938
+    (Feb'25 21.8 +~3%), BS 126033100997 (Mar'26 14.3 -23.2%), BS 126050100812
+    (Apr'26 13.0 -35.3%), DEA MER May-2026 (Apr FY27 1.7 cr PERSONS -35.8%),
+    Livemint 2026-03-25 (Feb'26 21.9 mn persons; FY26 six-year low).
+  * Series ends Apr 2026: MGNREGA was REPEALED and replaced by VB-G RAM G
+    w.e.f. 1 Jul 2026 (PIB PRID 2259703; Down To Earth). No press print exists
+    for May/Jun 2026 monthly demand; CMIE has May 2026 = 2.05 cr (single
+    source, could not be independently verified, therefore excluded). Jun 2026
+    is the scheme's final month; treat the series as TERMINAL — future
+    refreshes should track the VB-G RAM G successor metric instead.
+  * MIS portals (mnregaweb4/nreganarep) still 401/timeout from this box;
+    nrega.dord.gov.in + nregarep2.nic.in respond but report pages are gated.
+    data.gov.in resource ee03643a has NO demand field (only worked/provided,
+    verified 2026-07-08), so it cannot back this series at all.
 """
 import json
 import time

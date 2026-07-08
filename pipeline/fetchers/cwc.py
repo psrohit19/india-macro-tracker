@@ -32,7 +32,21 @@ Source landscape (verified Jul 2026):
     own coverage wasn't independently found.
 
 data/live/reservoirs.json is hand-seeded ("seed": true) from that coverage;
-see AUDIT.md for the article URL behind each anchor point.
+see AUDIT.md for the article URL behind each anchor point. Seed composition:
+  * Direct prints — 2025: 03 Apr 39.98% (The Wire), 09 May 31.78% (Deccan
+    Herald), 19 Jun 32% / 24 Jul 61% / 21 Aug 78% / 25 Sep 90% (ICRA monsoon
+    updates, icra.in ids 6425/6463/6508/6576, all quoting CWC bulletins);
+    2026: 09 Apr 44.71% and 30 Apr 38.72% (Down To Earth), 11 Jun 28.28%
+    (DTE + Businessworld), 25 Jun 26.37% (ChiniMandi), 02 Jul 26.00%
+    (DTE + Odisha Connect + Whalesbook).
+  * Derived (flagged): 2025-06-12 30.8%, 2025-06-26 36.0%, 2025-07-03 42.5% —
+    computed from the "corresponding period last year" BCM figures
+    (56.533 / 66.114 / 78.077) that the 2026 bulletins carry, divided by the
+    166-set capacity 183.565 BCM. CWC LY comparisons are like-for-like on the
+    current set, so the ratio is exact up to that assumption.
+CWC publishes year-round, so pre-monsoon (Apr-May) weeks are included; the
+gap weeks are bulletins whose coverage could not be independently retrieved
+(cwc.gov.in itself being WAF-gated) — never interpolated.
 
 Seasonal caveats: storage troughs in Jun (~25-35%) and peaks post-monsoon
 (Sep-Oct, 2025 season ~85%+). The file mixes the strong-monsoon 2025 season
