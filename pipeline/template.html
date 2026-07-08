@@ -103,9 +103,25 @@
     cursor: pointer; font-family: inherit;
   }
   .dl-all:hover { color: var(--text-primary); }
-  #refreshbtn { background: var(--good-wash); color: var(--good); border-color: var(--good);
-                font-weight: 650; }
-  #refreshbtn:hover { background: var(--good); color: #fff; }
+  /* soft color-coded header controls — muted washes, no glare */
+  #refreshbtn { background: rgba(12,163,12,0.10); color: var(--good);
+                border-color: rgba(12,163,12,0.45); font-weight: 650; }
+  #refreshbtn:hover { background: rgba(12,163,12,0.22); }
+  #themebtn { background: rgba(255,160,0,0.10); color: #b47a00;
+              border-color: rgba(255,160,0,0.40); font-weight: 650; }
+  #themebtn:hover { background: rgba(255,160,0,0.20); }
+  #pipebtn { background: rgba(42,120,214,0.10); color: var(--accent);
+             border-color: rgba(42,120,214,0.40); font-weight: 650; }
+  #pipebtn:hover { background: rgba(42,120,214,0.20); }
+  #dlall { background: rgba(122,90,200,0.10); color: #7a5ac8;
+           border-color: rgba(122,90,200,0.40); font-weight: 650; }
+  #dlall:hover { background: rgba(122,90,200,0.20); }
+  @media (prefers-color-scheme: dark) {
+    #themebtn { color: #d99a1f; }
+    #dlall { color: #a68ae0; }
+  }
+  html[data-theme="terminal"] #themebtn { color: #ffb000; }
+  html[data-theme="terminal"] #dlall { color: #b39ddb; }
   .banner {
     margin: 10px 0 14px; padding: 8px 12px; border: 1px solid var(--border);
     background: var(--banner-bg); border-radius: 8px; font-size: 12.5px; color: var(--text-secondary);
@@ -302,7 +318,7 @@
     <button class="dl-all" id="themebtn" style="margin-left:auto;"
       title="Toggle Bloomberg-terminal dark mode">&#9679; Terminal</button>
     <button class="dl-all" id="refreshbtn" title="Reload the page bypassing cache to show the latest published data">&#8635; Refresh</button>
-    <a class="dl-all" style="text-decoration:none; display:inline-block;"
+    <a class="dl-all" id="pipebtn" style="text-decoration:none; display:inline-block;"
        href="https://github.com/psrohit19/india-macro-tracker/actions/workflows/refresh.yml"
        target="_blank" rel="noopener"
        title="Trigger an immediate data re-pull via GitHub Actions (requires repo access): open, then click 'Run workflow'">&#9881; Run pipeline</a>
