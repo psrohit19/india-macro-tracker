@@ -415,18 +415,19 @@ def build():
         idx = next((i for i, r in enumerate(records) if r["id"] == anchor), len(records) - 1)
         records.insert(idx + 1, rec)
 
-    composites = build_composites(hist_by_id)
+    # composite indices removed from the page per user feedback (Jul 2026);
+    # build_composites() is retained above for potential re-enablement.
     payload = dict(
         as_of=TODAY.isoformat(),
         generated="sample-v2",
         categories=CATEGORIES,
-        series=composites + records,
+        series=records,
         bullets=build_bullets(records),
     )
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
     kb = OUT.stat().st_size // 1024
-    print(f"wrote {OUT} — {len(records)} series + {len(composites)} composites ({kb} KB)")
+    print(f"wrote {OUT} — {len(records)} series ({kb} KB)")
 
 
 if __name__ == "__main__":

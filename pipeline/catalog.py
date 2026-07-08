@@ -17,7 +17,6 @@ The fetchers in pipeline/fetchers/ each populate one or more of these ids.
 """
 
 CATEGORIES = [
-    "Composite Signals",
     "Prices & Inflation",
     "Output & Activity",
     "Fiscal",
@@ -322,7 +321,7 @@ SERIES = [
              changes="Toll-rate revisions (typically April) create level shifts; new toll-plaza additions add mechanical growth. Volume (transaction count) is the cleaner activity read than value.")),
 
     # ---------------- Rural & Agri ----------------
-    dict(id="rainfall", name="Rainfall vs LPA (season-to-date)", category="Rural & Agri",
+    dict(id="rainfall", name="Monsoon rainfall (% of normal)", category="Rural & Agri",
          unit="% of LPA", freq="W", agg="last", up_is_good=True, kind="level",
          base=103.0, vol=3.0, source="IMD", access="scrape",
          url="https://mausam.imd.gov.in/", release="Weekly in season",
@@ -594,7 +593,9 @@ HEADLINE = ["cpi", "iip", "gst", "credit", "fii_m", "pv", "trade_def", "gsec10y"
 #   compact — number + comparisons only, no chart (daily flow tapes)
 #   chart   — wide tile with a period-toggle chart (1D/5D/1M/6M/1Y/2Y/3Y/5Y/10Y)
 DISPLAY = {"fii": "compact", "dii": "compact", "fii_fytd": "compact",
-           "nifty": "chart", "repo": "chart", "gsec10y": "chart", "inrusd": "chart"}
+           "nifty": "chart", "repo": "chart", "gsec10y": "chart", "inrusd": "chart",
+           "nifty_pe": "chart", "vix": "chart", "fx_reserves": "chart",
+           "ust10y": "chart", "us_cpi": "chart"}
 
 # Monthly/quarterly series where month-on-month is mostly calendar/seasonality:
 # YoY becomes the lead comparison and "vs prev" is de-emphasized.
@@ -650,3 +651,84 @@ COMPOSITES = [
              what="Equal-weight z-score composite of system liquidity, bank credit growth, FPI flows, the 10Y G-sec yield (inverted) and WALR (inverted). Positive = financial conditions looser than the 10-year norm — supportive for deal financing and multiples.",
              changes="Sign conventions follow 'higher composite = easier conditions'. RBI publishes no official FCI; this mirrors common sell-side constructions (Goldman/CRISIL versions weight components differently).")),
 ]
+
+# ---------------------------------------------------------------------------
+# "How to read it & global context" — shown in each tile's ⓘ popover.
+# Global anchors are approximate mid-2026 levels, refreshed manually.
+# ---------------------------------------------------------------------------
+INTERPRET = {
+    "cpi": "RBI targets 4% with a 2-6% tolerance band: below 4% = easing room, above 6% = policy hard-constrained. Global context mid-2026: US ~4.2% (tariff/commodity reflation), euro area ~2%, China near zero (deflationary) — India sits mid-pack in this commodity-shock cycle.",
+    "cpi_core": "The sticky, demand-driven part — core above ~5% means inflation is no longer just food/fuel and rate cuts get harder. US core runs ~3.5-4%, Europe ~2.5%, China near zero.",
+    "cfpi": "Food is ~37% of the CPI basket, so this drives headline swings. Negative food inflation boosts urban real incomes but squeezes farm incomes — read alongside rural indicators. Watch the monsoon: deficits pass into food prices with a 3-6 month lag.",
+    "wpi": "Producer/input-cost inflation — leads corporate margin pressure (rising WPI with stable CPI = margin squeeze for producers of consumer goods, relief for commodity producers). The 2026 crude shock pushed it near double digits; compare US PPI ~3-4% and Chinese PPI still negative.",
+    "iip": "The industrial pulse: >5% is a strong cycle, <2% a stall. Mid-2026 context: China industrial output ~5-6%, US ~1-2%, Europe roughly flat — India's 5%+ is top-tier.",
+    "core8": "Infrastructure-heavy early proxy (40% of IIP, releases a month earlier). Direction matters more than level; divergence from IIP usually resolves toward core-8.",
+    "pmi_mfg": "Diffusion index: 50 = no change, 55+ = strong expansion. India has run the highest manufacturing PMI among major economies for 2+ years — US ~52, China ~50-51, eurozone hovering at 49-50.",
+    "pmi_svc": "Services activity read the same way (50 = neutral). India's services PMI is typically the world's strongest print; a fall below 55 here is a bigger signal than it sounds.",
+    "gdp": "India's potential growth is ~6.5%: above = cyclical strength, below 6% = stall. Fastest major economy — vs China ~4.5-5%, US ~1.5-2%, euro area ~1%.",
+    "pfce": "Consumption is ~60% of GDP. PFCE tracking below GDP growth = investment/exports carrying the economy and household stress underneath (the K-shape debate). Above GDP = broad-based demand.",
+    "obicus_cu": "Capacity utilisation sustained above ~75-76% is the historical trigger for private capex cycles. US runs ~78% (Fed measure), Europe ~78-80% — India crossing 76+ alongside high credit growth is the green light.",
+    "ccs": "100 = neutral: households net-optimistic above, pessimistic below. It has run sub-100 for most of a decade — read the direction and the current-vs-future gap, not the level.",
+    "ios": "Business Expectations Index >100 = manufacturers expect expansion next quarter. Falling BEI with rising input-cost responses = margin-pressure warning.",
+    "ies": "Households systematically overestimate inflation by ~4-5pp, so read the CHANGE, never the level. Rising expectations while actual CPI rises = de-anchoring risk, which forces the RBI hawkish regardless of growth.",
+    "gst": "Nominal consumption + formalization proxy. Compare YoY growth to nominal GDP growth (~9-10%): persistently above = compliance/formalization gains. Note the Nov-2025 level break (cess removed from headline after GST 2.0).",
+    "fisc_def": "FY-to-date deficit as % of the full-year budget: a smooth path is ~8.3%/month, so 9.6% by May is comfortably ahead of plan (May always dips — the RBI dividend lands then). India targets ~4.4% of GDP vs US ~6-7% and euro area ~3%.",
+    "capex": "FY27 budget is ₹12.2 lakh crore (record; ~4.1% higher than FY26) — a smooth pace is ~₹1.02 lakh cr/month, so track FYTD vs that line. Public capex has ~2.5-3x the GDP multiplier of revenue spending; a slowdown here hits the Capex-cycle read directly.",
+    "exports": "Driven by US/EU demand and the tariff environment; petroleum-product prices swing the value even when volumes are flat. Compare with services exports — goods weakness with services strength is the structural India pattern.",
+    "imports": "Oil is ~30% of the bill; strip oil and gold mentally for the domestic-demand read. Rising non-oil-non-gold imports = strong domestic demand (not necessarily bad).",
+    "trade_def": "$20-25bn/month is the normal zone; it widens with crude. Funded by the ~$15bn/mo services surplus + remittances — panic only if the CAD (quarterly) breaches ~2.5% of GDP.",
+    "svc_exports": "India's structural strength (software, GCCs, business services) — offsets roughly half the goods deficit. Watch growth vs the 3-yr trend: GCC expansion should keep this compounding ~8-10%.",
+    "fx_reserves": "~10-11 months of import cover — among the strongest EM buffers (China holds ~$3.2tn; most EMs hold <6 months). Weekly dips mix RBI intervention with valuation effects; a $20bn+ drawdown over a quarter = active rupee defense.",
+    "fii": "Daily foreign risk appetite — noisy; single days mean little, streaks of 5+ negative sessions matter.",
+    "fii_m": "Monthly net: ±₹30,000 cr is a notable month. Compare against DII monthly — domestic flows have absorbed foreign selling since 2022.",
+    "fii_fytd": "The fiscal-year scorecard of foreign positioning in listed markets, resetting each April. FY27 running deeply negative (~-₹1.4 lakh cr) = global reflation risk-off meeting rich Indian valuations; a turn positive here historically coincides with market breakouts.",
+    "dii": "The domestic institutional bid (MFs + insurers + banks). Structurally positive because of SIPs — a negative DII day is rarer and more informative than a negative FII day.",
+    "dii_m": "Read against FII monthly: DII > |FII| = domestic flows fully absorbing foreign selling (the post-2022 regime). Both negative = genuine liquidity stress.",
+    "sip": "The stickiest flow in Indian markets (~₹30k cr/mo) — the floor under equities. Watch for the first month-over-month decline in a correction; SIP resilience is the whole domestic-flows thesis.",
+    "mf_cash": "Fund managers' dry powder: 4-5% of AUM is normal, >6% = defensive positioning (and future buying power), <4% = fully invested with no cushion. Contrarian at extremes.",
+    "gsec10y": "The economy's discount rate — anchors corporate bond and loan pricing. Watch the spread over the US 10Y (~2.6pp now vs ~4-5pp historically): compression pressures FPI debt flows and the rupee. Germany ~2.6%, China ~1.7%, Japan ~1.5%.",
+    "inrusd": "Higher = weaker rupee. 2026's move to ~95 tracks the crude shock and dollar strength; depreciation hurts importers/inflation but helps IT-services and pharma exporters. The REER (monthly) is the better competitiveness measure; CNY ~7.2 has been managed-stable.",
+    "liquidity": "Positive = banking system surplus (supports rate transmission and credit); deficits spike around advance-tax dates (mid-Jun/Sep/Dec/Mar) — those are calendar effects, not stress, unless they persist.",
+    "repo": "Judge via the real rate: repo minus CPI at ~1.3pp is roughly neutral; >2pp restrictive. Fed at 3.75%, ECB ~2%, China ~3% (LPR) — India's cutting room depends on the Fed path and the rupee.",
+    "m3": "Money growth ~1-2pp above nominal GDP growth is consistent; well above = future inflation fuel, well below = monetary drag. US M2 growth is low-single-digit.",
+    "credit": "17-18% is boom territory (vs US bank credit ~3-4%, Europe ~2%, China TSF ~8%). Sustained credit growth 5pp+ above deposit growth forces deposit-rate competition and eventually caps the boom — that gap is the thing to watch.",
+    "deposits": "The funding side: if credit grows much faster for long, banks fight for deposits (rates up, margins down). CASA share (monthly) tells you how expensive the catch-up is.",
+    "cards": "Urban discretionary pulse — most sensitive series to festive-season timing; use the YoY and 3-month trend, never MoM. US card spending growth ~4-5% nominal is the mature-market baseline.",
+    "personal_loans": "Leveraged consumption. RBI actively manages this via risk weights — a slowdown here can be regulatory, not demand. Above ~15% YoY historically draws RBI attention to unsecured segments.",
+    "walr": "Transmission gauge: after a repo cut, fresh-loan WALR should fall within a quarter (EBLR-linked loans reprice fast). WALR sticky while repo falls = banks defending margins — check the spread (WALR minus repo, ~3.3pp normal).",
+    "gnpa": "1.8% is a multi-decadal low (US bank delinquencies ~1.5%, China official ~1.6% — widely seen as understated). At these levels the FSR's stress-test projections and the unsecured-retail slippage line matter more than the headline.",
+    "pv": "Urban big-ticket demand; 3.5-4 lakh/month is the record zone. Scale context: China sells ~2.2mn PVs/month, the US ~1.3mn — India's premiumization (SUV share) matters as much as units.",
+    "tw": "The mass-market/aspirational barometer, half-rural. Recovery here lagged PVs for years — 2W outgrowing PV = broad-based (not just affluent) demand returning.",
+    "cv": "The freight/capex lead indicator — MHCVs track investment and mining, LCVs track e-commerce/last-mile. CV cycles lead IIP by ~2 quarters; a CV downturn is an early recession signal.",
+    "tractors": "The purest rural capex/sentiment read. +25% YoY despite a weak monsoon = government income support and non-farm rural demand doing the work — an unusual and watch-worthy divergence.",
+    "upi": "World's largest instant-payment system (20bn+ txns/month) — no international parallel at this scale. Value growth ~2x nominal GDP = continued cash displacement; the P2M (merchant) share is the true consumption signal.",
+    "fuel": "Diesel (~40% of the barrel) = freight/agriculture; petrol = personal mobility; ATF = premium travel. Diesel stagnating while GDP grows = efficiency + EV + rail-freight shift, not weakness per se.",
+    "airpax": "Premium discretionary + business activity. India ~15-16 cr domestic pax/year and compounding double-digit vs US ~7.5 crore/month (mature). Capacity events (groundings) can mask demand.",
+    "fastag": "Electronic tolls = road freight + intercity mobility combined. Value grows with toll-rate hikes each April — volume growth is the cleaner activity read.",
+    "trai_subs": "Negative months usually = SIM consolidation after tariff hikes, not demand destruction. The active-subscriber (VLR) base and 5G FWA additions are the structural reads.",
+    "gold": "Tracked in tonnes to strip out price effects: high prices suppress tonnage while value spent rises. India + China = ~half of world jewellery demand; strong tonnage despite record prices = genuine income strength in rural/savings segments.",
+    "rainfall": "100 = normal (the 50-year Long Period Average); 96-104 is 'normal', below 90 = deficient. This is season-to-date cumulative during Jun-Sep — early-season deficits can heal (2026: 58 → 88 through July). Deficient monsoons hit kharif output, rural incomes and food inflation with a lag.",
+    "reservoirs": "Stored water = insurance for the winter (rabi) crop and hydro/urban supply. Compare with the same week last year and the 10-yr average — 26% entering the 2026 monsoon is stressed (the 2025 season peaked at ~90%). Monsoon recovery matters more for this than for kharif sowing.",
+    "sowing": "Cumulative area within the season — always compare the same week YoY (-21% currently = drought-delayed planting). Sowing can catch up fast if rains revive by end-July; what's planted by mid-August is locked in for H2 farm incomes.",
+    "mgnrega": "INVERSE indicator: rising work demand = rural distress (people fall back on guaranteed work when farm/informal jobs dry up). Scheme repealed 1-Jul-2026 — series is terminal; watch its successor (VB-G RAM G) once data begins.",
+    "plfs_ur": "India ~5.5% vs US 4.2%, China urban ~5.1%, euro area ~6.3% — but cross-country comparison is treacherous (definitions differ). Always read with LFPR: UR falling while LFPR falls = discouraged workers, not job creation.",
+    "lfpr": "India's ~54-55% is low vs US ~62% and China ~65% — the gap is largely female participation, which is the single biggest structural growth lever. Rising LFPR with stable UR = genuine job creation.",
+    "epfo": "Formal-sector payroll proxy — counts formalization of existing jobs as well as new ones. Publication suspended since Jul-2025 (EPFO 3.0 migration); treat the tile as historical until releases resume.",
+    "power_gen": "Same-day economic activity proxy (daily billion units). Weather drives short-run swings — YoY around heatwave months misleads. Scale: China generates ~30 BU/day, US ~12, India ~5.5.",
+    "peak_demand": "Tests grid adequacy; records are usually heatwave events. The trend rate of peak growth (~6-7%/yr) is the capacity-planning signal; 'demand met' excludes shortages — check unmet demand when stressed.",
+    "coal": "Fuels ~70% of power. Seasonal (monsoon dips, Q4 target push). Plant coal-stock days (CEA) is the stress indicator; production growth matters mainly when stocks are thin.",
+    "nifty": "The public-market backdrop for entry/exit pricing. Compare the earnings yield (1/PE ~4.8%) against the 10Y G-sec (6.8%) — a negative gap means equities are expensive vs bonds. 2026's ~11% March correction repriced but didn't cheapen the market vs history.",
+    "nifty_pe": "21x trailing vs a 10-year norm of ~22-24x = slightly below average, not cheap. Context: S&P 500 ~22-24x, Europe ~14x, China ~13x — India's premium is structural (growth + ROE) but mean-reverts at extremes (>26x / <17x).",
+    "vix": "Options-implied 30-day volatility: <12 = complacency (best IPO/exit windows), >20 = stress (windows shut). Spikes are event-driven and mean-revert within weeks — sustained elevation is the real signal.",
+    "ipo_qip": "The exit-window gauge: ₹15,000+ cr/month = wide open; near-zero months = shut. Lumpy (one mega-IPO doubles a month) — read the 3-month average and the DRHP pipeline together.",
+    "corp_spread": "The market price of credit risk over the risk-free curve: 60-80bps is normal for 3Y AAA; sustained widening past ~100bps = financing conditions tightening for deals. US investment-grade runs ~100-130bps for context.",
+    "brent": "India's most important exogenous price: every +$10/bbl adds ~0.4% of GDP to the import bill and ~30bps to CPI with a lag, and pressures INR/fiscal via fuel subsidies. $90+ = the stress scenario; 2026's shock is the current macro driver.",
+    "dxy": "The global risk-appetite dial: a rising dollar tightens global financial conditions and historically coincides with FII selling in India and EM broadly. Falling DXY = tailwind for flows and the rupee.",
+    "ust10y": "The global discount rate. India's 10Y spread over it (~2.6pp) is near multi-decade lows — further UST rises squeeze FPI debt flows and cap how much the RBI can ease. 4%+ US yields keep global money expensive.",
+    "fedfunds": "Sets the ceiling on EM easing: the RBI rarely cuts deep while the Fed holds high (rupee pressure). Fed cuts = room for India; the futures-implied path moves markets more than the level.",
+    "us_cpi": "Drives the Fed, therefore the dollar, therefore EM flows. 2026's re-acceleration to ~4.2% (vs euro ~2%, China ~0%) is what's keeping the Fed on hold and global conditions tight — the single most important foreign number for Indian markets right now.",
+    "global_pmi": ">50 = global expansion. It proxies external demand for India's goods exports; India contributes meaningfully to the global composite now, so don't read it as fully independent.",
+}
+for s in SERIES:
+    if s["id"] in INTERPRET:
+        s["info"]["interpret"] = INTERPRET[s["id"]]

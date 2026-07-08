@@ -64,7 +64,7 @@ bullets_html = "".join(
 
 asof = data["as_of"]
 html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
-<title>India Macro — Edition {asof}</title><style>
+<title>Claypond India Macro — Edition {asof}</title><style>
 body{{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#0b0b0b;background:#fff;
 margin:0;padding:32px;max-width:860px;margin:0 auto}}
 h1{{font-size:20px;margin:0}} .sub{{color:#52514e;font-size:13px;margin:2px 0 18px}}
@@ -85,10 +85,9 @@ td.v{{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}}
 .foot{{font-size:10.5px;color:#898781;margin-top:20px;line-height:1.5}}
 @media print{{body{{padding:0}}}}
 </style></head><body>
-<h1>India Macro Tracker — Edition</h1>
+<h1>Claypond India Macroeconomic Tracker — Edition</h1>
 <div class="sub">Data as of {asof} · sample data pending live fetchers · full dashboard has drill-downs &amp; CSV</div>
 <h2>Headlines</h2><div class="strip">{hero_html}</div>
-<h2>Composite signals</h2><div class="strip">{comp_html}</div>
 <h2>What changed</h2><ul>{bullets_html}</ul>
 <h2>All series — year-on-year</h2><table>{rows_html}</table>
 <div class="foot">Internal use only. PMI and WGC series carry redistribution restrictions.

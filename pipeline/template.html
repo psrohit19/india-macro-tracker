@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>India Macro Tracker</title>
+<title>Claypond India Macroeconomic Tracker</title>
 <style>
   :root {
     --surface-1: #fcfcfb;
@@ -137,6 +137,8 @@
     scroll-margin-top: 64px; cursor: pointer;
   }
   .tile:hover { border-color: var(--baseline); }
+  .tile.smpl { opacity: 0.5; filter: saturate(0.5); }
+  .tile.smpl:hover { opacity: 0.85; }
   .tile.chart { grid-column: span 2; }
   @media (max-width: 620px) { .tile.chart { grid-column: auto; } }
   .ranges { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -161,7 +163,7 @@
   }
   .badge.rev { color: var(--bad); border-color: var(--bad-wash); background: var(--bad-wash); }
   .pop {
-    position: fixed; z-index: 30; display: none; max-width: 340px;
+    position: fixed; z-index: 30; display: none; max-width: 380px; max-height: 70vh; overflow-y: auto;
     background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
     padding: 12px 14px; font-size: 12px; line-height: 1.5; color: var(--text-secondary);
     box-shadow: 0 6px 24px rgba(0,0,0,0.18);
@@ -242,7 +244,7 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <h1>India Macro Tracker</h1>
+    <h1>Claypond India Macroeconomic Tracker</h1>
     <span class="asof" id="asof"></span>
     <button class="dl-all" id="dlall">Download all (CSV)</button>
   </header>
@@ -256,12 +258,6 @@
   </div>
 
   <div class="hero-grid" id="heroes"></div>
-
-  <div class="pulse" id="pulse">
-    <h2>Pulse board</h2>
-    <div class="note">Colored by year-on-year direction × whether up is good for that series. Click any chip to jump to its tile.</div>
-    <div id="prows"></div>
-  </div>
 
   <nav class="chips" id="nav"></nav>
   <main id="main"></main>
@@ -357,6 +353,10 @@
       { x1: x(i), x2: x(i), y1: PT - 2, y2: plotB, stroke: "var(--grid)", "stroke-width": "1" })));
     svg.appendChild(mk("line", { x1: PL - 4, x2: W - PR + 4, y1: plotB, y2: plotB,
       stroke: "var(--baseline)", "stroke-width": "1" }));
+    if (min < 0 && max > 0) {              // zero axis for flow series
+      svg.appendChild(mk("line", { x1: PL - 4, x2: W - PR + 4, y1: y(0), y2: y(0),
+        stroke: "var(--muted)", "stroke-width": "1" }));
+    }
     vals.forEach((_, i) => {
       if ((n - 1 - i) % 3 !== 0) return;
       const t = mk("text", { x: Math.min(Math.max(x(i), 16), W - 20), y: H - 3,
@@ -409,10 +409,14 @@
     pop.appendChild(el("h3", null, s.name));
     pop.appendChild(el("h4", null, "What it measures & how"));
     pop.appendChild(el("div", null, s.info.what));
+    if (s.info.interpret) {
+      pop.appendChild(el("h4", null, "How to read it & global context"));
+      pop.appendChild(el("div", null, s.info.interpret));
+    }
     pop.appendChild(el("h4", null, "Methodology watch"));
     pop.appendChild(el("div", null, s.info.changes));
     pop.style.display = "block";
-    const r = btn.getBoundingClientRect(), pw = Math.min(340, window.innerWidth - 24);
+    const r = btn.getBoundingClientRect(), pw = Math.min(380, window.innerWidth - 24);
     pop.style.left = Math.max(12, Math.min(r.left - pw / 2, window.innerWidth - pw - 12)) + "px";
     const ph = pop.offsetHeight;
     pop.style.top = (r.bottom + ph + 16 > window.innerHeight && r.top - ph - 8 > 0
@@ -438,7 +442,9 @@
     const ppy = PPY[s.freq], len = s.history.values.length;
     const cand = [];
     if (s.freq === "D") cand.push(["1D", 2], ["5D", 6], ["1M", 23]);
-    cand.push(["6M", Math.max(2, Math.round(ppy / 2))],
+    if (s.freq === "W") cand.push(["1M", 5]);
+    cand.push(["3M", Math.max(2, Math.round(ppy / 4))],
+              ["6M", Math.max(2, Math.round(ppy / 2))],
               ["1Y", ppy], ["2Y", 2 * ppy], ["3Y", 3 * ppy],
               ["5Y", 5 * ppy], ["10Y", 10 * ppy]);
     return cand.filter(([, n], i) => n >= 2 && (n <= len || (i > 0 && cand[i - 1][1] < len)));
@@ -493,6 +499,10 @@
       t.textContent = compact(v);
       svg.appendChild(t);
     });
+    if (min < 0 && max > 0) {              // zero axis for flow series
+      svg.appendChild(mk("line", { x1: PL, x2: W - PR, y1: y(0), y2: y(0),
+        stroke: "var(--muted)", "stroke-width": "1.2" }));
+    }
     // ~6 x labels
     const step = Math.max(1, Math.floor(n / 6));
     for (let i = n - 1; i >= 0; i -= step) {
@@ -602,29 +612,6 @@
     heroes.appendChild(h);
   });
 
-  // ---------- pulse board ----------
-  const prows = document.getElementById("prows");
-  DATA.categories.filter(c => c !== "Composite Signals").forEach(cat => {
-    const items = DATA.series.filter(s => s.category === cat);
-    if (!items.length) return;
-    const row = el("div", "prow");
-    row.appendChild(el("div", "pcat", cat));
-    items.forEach(s => {
-      const yoyRow = s.rows.find(r => r[0].startsWith("vs LY"));
-      const cls = dClass(yoyRow && yoyRow[2], s.up_is_good);
-      const chip = el("span", "pchip " + (cls.includes("good") ? "good" : cls.includes("bad") ? "bad" : ""),
-        s.name.length > 24 ? s.name.slice(0, 23) + "…" : s.name);
-      chip.title = s.name + ": " + s.latest.value + " " + s.unit +
-        (yoyRow && yoyRow[2] ? " (" + yoyRow[2].text + " YoY)" : "");
-      chip.addEventListener("click", () => {
-        const t = document.getElementById("tile-" + s.id);
-        if (t) t.scrollIntoView({ behavior: "smooth", block: "center" });
-      });
-      row.appendChild(chip);
-    });
-    prows.appendChild(row);
-  });
-
   // ---------- category sections ----------
   const main = document.getElementById("main");
   const nav = document.getElementById("nav");
@@ -645,7 +632,7 @@
 
     const grid = el("div", "grid");
     items.forEach(s => {
-      const t = el("div", "tile" + (s.display === "chart" ? " chart" : ""));
+      const t = el("div", "tile" + (s.display === "chart" ? " chart" : "") + (s.sample ? " smpl" : ""));
       t.id = "tile-" + s.id;
 
       const lbl = el("div", "lbl");

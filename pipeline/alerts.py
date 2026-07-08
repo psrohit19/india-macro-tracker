@@ -33,10 +33,6 @@ RULES = [
          note="Brent above $90 — CAD/inflation stress scenario activates."),
     dict(series="vix", when="above", value=20.0,
          note="India VIX above 20 — IPO/exit windows typically shut."),
-    dict(series="cmp_fci", when="below", value=-1.0,
-         note="Financial conditions >1σ tighter than norm — financing risk for live deals."),
-    dict(series="cmp_rural", when="below", value=-1.0,
-         note="Rural demand >1σ below norm — check rural-exposed portfolio names."),
 ]
 
 
@@ -74,7 +70,7 @@ def evaluate():
 def deliver(messages):
     if not messages:
         return
-    text = "*India Macro Tracker alerts*\n" + "\n".join(messages)
+    text = "*Claypond India Macro Tracker alerts*\n" + "\n".join(messages)
     hook = os.environ.get("SLACK_WEBHOOK_URL")
     if hook:
         req = urllib.request.Request(
