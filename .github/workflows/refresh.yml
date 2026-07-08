@@ -1,0 +1,38 @@
+# Daily refresh of the India Macro Tracker -> GitHub Pages.
+# 19:45 IST (14:15 UTC) after market close, + 09:15 IST for overnight prints.
+name: refresh-dashboard
+on:
+  schedule:
+    - cron: "15 14 * * *"   # 19:45 IST daily
+    - cron: "45 3 * * *"    # 09:15 IST daily
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install requests beautifulsoup4 lxml
+      - run: python pipeline/refresh.py
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      - name: Commit refreshed dashboard
+        run: |
+          git config user.name "macro-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data/ dashboard.html index.html edition.html
+          git diff --cached --quiet || git commit -m "refresh $(date -u +'%F %H:%M')"
+          git push
+      # GitHub Pages (deploy from branch: main, / root) picks up index.html
+      # automatically after the push — no separate deploy step needed.
