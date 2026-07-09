@@ -417,6 +417,33 @@ def build():
 
     # composite indices removed from the page per user feedback (Jul 2026);
     # build_composites() is retained above for potential re-enablement.
+    import signals as signals_mod
+    recs_by_id = {r["id"]: r for r in records}
+    try:
+        sig = signals_mod.build_signals(recs_by_id)
+    except Exception as e:
+        print("signals failed:", repr(e))
+        sig = []
+
+    hv_html = ""
+    hvf = Path(__file__).parent.parent / "data" / "house_view.md"
+    if hvf.exists():
+        import re as _re
+        lines = hvf.read_text().splitlines()
+        parts = []
+        for ln in lines:
+            ln = ln.strip()
+            if not ln:
+                continue
+            ln = _re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", ln)
+            if ln.startswith("# "):
+                parts.append("<h3>" + ln[2:] + "</h3>")
+            elif ln.startswith("*") and ln.endswith("*") and not ln.startswith("**"):
+                parts.append('<p class="hv-note">' + ln.strip("*") + "</p>")
+            else:
+                parts.append("<p>" + ln + "</p>")
+        hv_html = "".join(parts)
+
     news = []
     nf = Path(__file__).parent.parent / "data" / "news.json"
     if nf.exists():
@@ -431,6 +458,8 @@ def build():
         series=records,
         bullets=build_bullets(records),   # still used by the edition
         news=news,
+        signals=sig,
+        house_view=hv_html,
     )
     OUT.parent.mkdir(exist_ok=True)
     OUT.write_text(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))

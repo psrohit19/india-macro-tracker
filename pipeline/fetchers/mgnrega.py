@@ -113,6 +113,12 @@ def _rows(fin_year):
 
 
 def fetch():
+    raise NotImplementedError(
+        "DISABLED: data.gov.in resource ee03643a has NO work-demand field — this "
+        "fetcher once overwrote the verified CMIE/press seed with wrong data. "
+        "Series is terminal anyway (scheme repealed 1 Jul 2026)." )
+
+def _old_fetch():
     print("MGNREGA live pull (data.gov.in):")
     today = date.today()
     cur_fy = today.year if today.month >= 4 else today.year - 1

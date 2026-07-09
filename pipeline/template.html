@@ -147,6 +147,25 @@
   .nlink { color: var(--text-primary); text-decoration: none; }
   .nlink:hover { color: var(--accent); text-decoration: underline; }
   .nsrc { flex: none; margin-left: auto; color: var(--muted); font-size: 11px; white-space: nowrap; padding-left: 10px; }
+  .signote { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+  .sig { display: flex; gap: 10px; align-items: baseline; padding: 6px 0; border-top: 1px solid var(--grid); flex-wrap: wrap; }
+  .sig:first-of-type { border-top: none; }
+  .siglight { flex: none; width: 10px; height: 10px; border-radius: 50%; position: relative; top: 0px; }
+  .siglight.green { background: var(--good); } .siglight.red { background: var(--bad); }
+  .siglight.amber { background: #eda100; }
+  .signame { flex: none; width: 170px; font-weight: 650; font-size: 12.5px; }
+  .sighead { font-size: 12.5px; color: var(--text-secondary); flex: 1 1 300px; }
+  .sigimp { font-size: 12px; color: var(--text-primary); flex-basis: 100%; padding-left: 20px; }
+  .sigimp::before { content: "→ "; color: var(--muted); }
+  .sigdrv { flex-basis: 100%; padding-left: 20px; display: flex; gap: 4px; flex-wrap: wrap; }
+  .sigdrv span { font-size: 10px; background: var(--chip-bg); border: 1px solid var(--border);
+                 border-radius: 999px; padding: 1px 7px; color: var(--muted); cursor: pointer; }
+  .sigdrv span:hover { color: var(--text-primary); }
+  #hvbody p { font-size: 13px; color: var(--text-secondary); margin: 6px 0; line-height: 1.55; }
+  #hvbody strong { color: var(--text-primary); }
+  #hvbody h3 { font-size: 13px; margin-bottom: 2px; }
+  #hvbody .hv-note { font-size: 11px; color: var(--muted); font-style: italic; }
+  html[data-theme="terminal"] .signame { color: #d8a520; }
 
   /* headline strip */
   .hero-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -331,6 +350,17 @@
   <div class="changed" id="newsbox">
     <h2>Top macro headlines</h2>
     <ul id="newslist"></ul>
+  </div>
+
+  <div class="changed" id="sigbox">
+    <h2>Signals &amp; playbook</h2>
+    <div class="signote">Machine-computed from the live series (rules are in pipeline/signals.py). Judgment lives in the House View below.</div>
+    <div id="sigrows"></div>
+  </div>
+
+  <div class="changed" id="hvbox">
+    <h2>House view</h2>
+    <div id="hvbody"></div>
   </div>
 
   <div class="hero-grid" id="heroes"></div>
@@ -804,6 +834,38 @@
     nl.appendChild(li);
   });
   if (!(DATA.news || []).length) document.getElementById("newsbox").remove();
+
+  // ---------- signals & playbook ----------
+  const sigrows = document.getElementById("sigrows");
+  (DATA.signals || []).forEach(sg => {
+    const row = el("div", "sig");
+    row.appendChild(el("span", "siglight " + sg.status));
+    row.appendChild(el("div", "signame", sg.name));
+    row.appendChild(el("div", "sighead", sg.headline));
+    row.appendChild(el("div", "sigimp", sg.implication));
+    const drv = el("div", "sigdrv");
+    (sg.drivers || []).forEach(id => {
+      const s = byId[id];
+      if (!s) return;
+      const chip = el("span", null, s.name.length > 22 ? s.name.slice(0, 21) + "…" : s.name);
+      chip.title = s.latest.value + " " + s.unit + " (" + s.latest.period + ")";
+      chip.addEventListener("click", () => {
+        const t = document.getElementById("tile-" + id);
+        if (t) t.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+      drv.appendChild(chip);
+    });
+    row.appendChild(drv);
+    sigrows.appendChild(row);
+  });
+  if (!(DATA.signals || []).length) document.getElementById("sigbox").remove();
+
+  // ---------- house view (analyst-owned markdown) ----------
+  if (DATA.house_view) {
+    document.getElementById("hvbody").innerHTML = DATA.house_view;  // generated server-side from repo-controlled markdown
+  } else {
+    document.getElementById("hvbox").remove();
+  }
 
   // ---------- headline strip ----------
   const heroes = document.getElementById("heroes");
