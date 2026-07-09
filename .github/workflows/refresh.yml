@@ -29,8 +29,8 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       - name: Commit refreshed dashboard
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "Claude"
+          git config user.email "noreply@anthropic.com"
           git add data/ dashboard.html index.html edition.html
           git diff --cached --quiet || git commit -m "refresh $(date -u +'%F %H:%M')"
           git push
